@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
+import csv
 import io
 
 app = FastAPI()
@@ -45,9 +45,18 @@ class RecipeGenerator:
 # On Vercel, requests to /api/generate are routed here
 @app.post("/generate")
 async def generate(file: UploadFile, theme: str = Form(...)):
-	content = await file.read()
-	df = pd.read_csv(io.BytesIO(content))
-	inventory_items = df["item"].str.lower().tolist()
+    content = await file.read()
+    text_stream = io.StringIO(content.decode('utf-8', errors='ignore'))
+    reader = csv.DictReader(text_stream)
+    inventory_items = []
+    for row in reader:
+        value = row.get('item')
+        if value is None:
+            # try first column if header differs
+            if len(row.values()):
+                value = list(row.values())[0]
+        if value is not None and str(value).strip():
+            inventory_items.append(str(value).strip().lower())
 	generator = RecipeGenerator(inventory_items, theme)
 	recipes = generator.generate_recipes()
 	return JSONResponse(content={"recipes": recipes})

@@ -1,0 +1,16 @@
+# Exclude local environments and caches
+RecipesVenv/
+venv/
+.env
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# Exclude node and build artifacts not needed for deployment input
+node_modules/
+**/node_modules/
+remirecipes/.cache/
+remirecipes/build/
+
+# Large datasets or local files
+ExampleInventory.csv
