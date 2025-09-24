@@ -60,3 +60,8 @@ async def generate(file: UploadFile, theme: str = Form(...)):
 	generator = RecipeGenerator(inventory_items, theme)
 	recipes = generator.generate_recipes()
 	return JSONResponse(content={"recipes": recipes})
+
+# Alias to support Vercel forwarding full path /api/generate
+@app.post("/api/generate")
+async def generate_alias(file: UploadFile, theme: str = Form(...)):
+	return await generate(file=file, theme=theme)
