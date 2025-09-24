@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import csv
 import io
 
@@ -65,3 +66,21 @@ async def generate(file: UploadFile, theme: str = Form(...)):
 @app.post("/api/generate")
 async def generate_alias(file: UploadFile, theme: str = Form(...)):
 	return await generate(file=file, theme=theme)
+
+
+class GenerateJsonRequest(BaseModel):
+	inventory: list[str]
+	theme: str
+
+
+@app.post("/generate_json")
+async def generate_json(payload: GenerateJsonRequest):
+	inventory_items = [str(x).strip().lower() for x in payload.inventory if str(x).strip()]
+	generator = RecipeGenerator(inventory_items, payload.theme)
+	recipes = generator.generate_recipes()
+	return JSONResponse(content={"recipes": recipes})
+
+
+@app.post("/api/generate_json")
+async def generate_json_alias(payload: GenerateJsonRequest):
+	return await generate_json(payload)

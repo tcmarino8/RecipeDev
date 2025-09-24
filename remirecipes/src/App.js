@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 
 function App() {
-  const [file, setFile] = useState(null);
   const [theme, setTheme] = useState("breakfast");
+  const [text, setText] = useState("");
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleFileChange = (e) => setFile(e.target.files[0]);
   const handleThemeChange = (e) => setTheme(e.target.value);
 
   const handleSubmit = async (e) => {
@@ -15,23 +14,20 @@ function App() {
     setLoading(true);
     setError("");
     setRecipes([]);
-    if (!file) {
-      setError("Please upload a CSV file.");
-      setLoading(false);
-      return;
-    }
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("theme", theme);
+    const inventory = text
+      .split(/\r?\n|,/) // lines or comma-separated
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     try {
-      const res = await fetch("/api/generate", {
+      const res = await fetch("/api/generate_json", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inventory, theme }),
       });
       if (!res.ok) throw new Error("API error");
       const data = await res.json();
-      setRecipes(data.recipes);
+      setRecipes(data.recipes || []);
     } catch (err) {
       setError("Failed to generate recipes.");
     }
@@ -44,8 +40,15 @@ function App() {
       <form onSubmit={handleSubmit}>
         <div>
           <label>
-            Upload your inventory CSV:
-            <input type="file" accept=".csv" onChange={handleFileChange} required />
+            Paste your inventory (one per line or comma-separated):
+            <textarea
+              rows={6}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="eggs\nmilk\ncheese\nspinach"
+              style={{ width: "100%" }}
+              required
+            />
           </label>
         </div>
         <div>
