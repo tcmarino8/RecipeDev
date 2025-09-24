@@ -1,9 +1,25 @@
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 
 app = FastAPI()
+
+# Enable CORS for local dev and common deploy hosts
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
+        "*"  # Relaxed for demos; tighten in production
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class RecipeGenerator:
     def __init__(self, inventory, cuisine_theme):
@@ -40,3 +56,8 @@ async def generate(file: UploadFile, theme: str = Form(...)):
     generator = RecipeGenerator(inventory_items, theme)
     recipes = generator.generate_recipes()
     return JSONResponse(content={"recipes": recipes})
+
+# Alias route to support /api prefix used by frontend and Vercel rewrite
+@app.post("/api/generate")
+async def generate_alias(file: UploadFile, theme: str = Form(...)):
+    return await generate(file=file, theme=theme)
